@@ -482,7 +482,7 @@ failure:
 2. **Checkstyle** enforces style and design rules; any warning fails the build.
 3. **Compile with NullAway** fails the build if a value that might be `null`
    is used as if it can't be. Mark nullable things with `@Nullable`.
-4. **All tests, plus JaCoCo:** at least **60%** of lines must be covered by tests.
+4. **All tests, plus JaCoCo:** at least **80%** of lines must be covered by tests.
 5. **Suppressions guard:** `checkstyle-suppressions.xml` must stay empty. Fix
    warnings rather than silencing them.
 
