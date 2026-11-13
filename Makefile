@@ -4,7 +4,7 @@ help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-18s\033[0m %s\n", $$1, $$2}'
 
-agent-completion: ## FULL gate: format, checkstyle, NullAway, unit + integration tests, coverage >= 60%
+agent-completion: ## FULL gate: format, checkstyle, NullAway, unit + integration tests, coverage >= 80%
 	@./scripts/agent-completion.sh
 
 build: ## Full build with every gate (same as `./mvnw clean verify`)

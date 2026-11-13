@@ -1,11 +1,5 @@
 package edu.northwestu.project1p2;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import edu.northwestu.project1p2.entities.User;
 import edu.northwestu.project1p2.repositories.UserRepository;
 import edu.northwestu.project1p2.support.ProtectedProbeController;
@@ -34,6 +28,12 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Error pages against a REAL server on a random port. MockMvc never performs the
@@ -96,14 +96,13 @@ class ErrorPagesIT {
         return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 
-    /** Signs a fresh, already-confirmed user in through the real login form. */
-    private HttpClient signedInBrowser() throws IOException, InterruptedException {
+    /** Signs a fresh, already-confirmed user in to {@code client} through the real login form. */
+    private void signIn(final HttpClient client) throws IOException, InterruptedException {
         final String email = "errors-" + UUID.randomUUID().toString().substring(0, 8) + '@' + "example.test";
         final User user = new User(email, "Error Tester", this.passwordEncoder.encode(PASSWORD));
         user.setVerifiedAt(LocalDateTime.now());
         this.userRepository.save(user);
 
-        final HttpClient client = browser();
         final Matcher csrf = CSRF.matcher(this.getPage(client, "/login").body());
         assertThat(csrf.find()).as("login form carries a CSRF token").isTrue();
         final HttpResponse<String> login = this.postForm(client, "/login",
@@ -111,12 +110,14 @@ class ErrorPagesIT {
         assertThat(login.statusCode()).isEqualTo(302);
         assertThat(login.headers().firstValue("Location")).hasValueSatisfying(
                 location -> assertThat(location).doesNotContain("error"));
-        return client;
     }
 
     @Test
     void unknownPathIsA404PageForSignedOutVisitors() throws Exception {
-        final HttpResponse<String> response = this.getPage(browser(), "/no-such-page");
+        final HttpResponse<String> response;
+        try (HttpClient client = browser()) {
+            response = this.getPage(client, "/no-such-page");
+        }
 
         assertThat(response.statusCode()).isEqualTo(404);
         assertThat(response.headers().firstValue("Content-Type")).hasValueSatisfying(
@@ -130,7 +131,11 @@ class ErrorPagesIT {
 
     @Test
     void unknownPathIsA404PageForSignedInUsersWithTheirNavigation() throws Exception {
-        final HttpResponse<String> response = this.getPage(this.signedInBrowser(), "/no-such-page");
+        final HttpResponse<String> response;
+        try (HttpClient client = browser()) {
+            this.signIn(client);
+            response = this.getPage(client, "/no-such-page");
+        }
 
         assertThat(response.statusCode()).isEqualTo(404);
         assertThat(response.body())
@@ -140,15 +145,18 @@ class ErrorPagesIT {
 
     @Test
     void nestedUnknownPathAndMissingStaticFileAre404s() throws Exception {
-        final HttpClient client = browser();
-
-        assertThat(this.getPage(client, "/a/b/c").statusCode()).isEqualTo(404);
-        assertThat(this.getPage(client, "/css/does-not-exist.css").statusCode()).isEqualTo(404);
+        try (HttpClient client = browser()) {
+            assertThat(this.getPage(client, "/a/b/c").statusCode()).isEqualTo(404);
+            assertThat(this.getPage(client, "/css/does-not-exist.css").statusCode()).isEqualTo(404);
+        }
     }
 
     @Test
     void realProtectedRouteStillRedirectsSignedOutVisitorsToLogin() throws Exception {
-        final HttpResponse<String> response = this.getPage(browser(), ProtectedProbeController.PATH);
+        final HttpResponse<String> response;
+        try (HttpClient client = browser()) {
+            response = this.getPage(client, ProtectedProbeController.PATH);
+        }
 
         assertThat(response.statusCode()).isEqualTo(302);
         assertThat(response.headers().firstValue("Location")).hasValueSatisfying(
@@ -157,7 +165,11 @@ class ErrorPagesIT {
 
     @Test
     void realProtectedRouteWorksWhenSignedIn() throws Exception {
-        final HttpResponse<String> response = this.getPage(this.signedInBrowser(), ProtectedProbeController.PATH);
+        final HttpResponse<String> response;
+        try (HttpClient client = browser()) {
+            this.signIn(client);
+            response = this.getPage(client, ProtectedProbeController.PATH);
+        }
 
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.body()).isEqualTo("protected content");
@@ -165,7 +177,10 @@ class ErrorPagesIT {
 
     @Test
     void postWithoutCsrfTokenIsA403Page() throws Exception {
-        final HttpResponse<String> response = this.postForm(browser(), "/register", "username=x");
+        final HttpResponse<String> response;
+        try (HttpClient client = browser()) {
+            response = this.postForm(client, "/register", "username=x");
+        }
 
         assertThat(response.statusCode()).isEqualTo(403);
         assertThat(response.body())
@@ -175,9 +190,12 @@ class ErrorPagesIT {
 
     @Test
     void apiClientsGetJsonInsteadOfHtml() throws Exception {
-        final HttpResponse<String> response = browser().send(
-                HttpRequest.newBuilder(this.uri("/no-such-page")).header("Accept", "application/json").GET().build(),
-                HttpResponse.BodyHandlers.ofString());
+        final HttpResponse<String> response;
+        try (HttpClient client = browser()) {
+            response = client.send(
+                    HttpRequest.newBuilder(this.uri("/no-such-page")).header("Accept", "application/json").GET().build(),
+                    HttpResponse.BodyHandlers.ofString());
+        }
 
         assertThat(response.statusCode()).isEqualTo(404);
         assertThat(response.body()).contains("\"status\":404");

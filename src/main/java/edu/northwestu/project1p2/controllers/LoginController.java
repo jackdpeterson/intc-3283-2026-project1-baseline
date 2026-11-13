@@ -31,6 +31,8 @@ public class LoginController {
             new Notice(ERROR, ERROR, "Invalid email or password.", false),
             new Notice("unverified", ERROR,
                     "Confirm your email address before signing in. Check your inbox for the link.", true),
+            new Notice("oauth", ERROR,
+                    "Google sign-in failed. Make sure your Google email address is verified, then try again.", false),
             new Notice("verified", SUCCESS, "Email confirmed. You can sign in now.", false));
 
     @GetMapping

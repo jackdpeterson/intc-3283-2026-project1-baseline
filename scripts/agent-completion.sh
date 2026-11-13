@@ -6,7 +6,7 @@
 #   2. checkstyle:check      static analysis (any warning fails)
 #   3. clean install         compile with Error Prone + NullAway, package
 #   4. verify                unit tests -> integration tests (Docker) -> spotless:check
-#                            -> checkstyle -> JaCoCo merged line coverage >= 60%
+#                            -> checkstyle -> JaCoCo merged line coverage >= 80%
 #   5. suppressions guard    checkstyle-suppressions.xml must be unchanged
 #
 # Integration tests use Testcontainers, so Docker must be running.
@@ -33,7 +33,7 @@ step "2/5: checkstyle:check"
 step "3/5: clean install -DskipTests (compile + NullAway)"
 ./mvnw -B -q clean install -DskipTests || fail "clean install (compile/NullAway)"
 
-step "4/5: verify (unit tests, integration tests, JaCoCo >= 60%)"
+step "4/5: verify (unit tests, integration tests, JaCoCo >= 80%)"
 ./mvnw -B verify || fail "verify (tests/coverage)"
 
 step "5/5: checkstyle-suppressions.xml unchanged"

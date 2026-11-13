@@ -44,12 +44,15 @@ public class SecurityConfig {
     private static final String[] PUBLIC_PATHS = {
         HOME, LOGIN, LOGOUT, "/register", "/error",
         "/check-email", "/verify-email/**",
+        // Google sign-in: start (/oauth2/authorization/*) and the provider's redirect back.
+        "/oauth2/**", "/login/oauth2/**",
         "/css/**", "/js/**", "/images/**", "/favicon.ico",
     };
 
     @Bean
     public SecurityFilterChain browserSecurityFilterChain(
             final HttpSecurity http,
+            final OAuthLoginSuccessHandler oauthSuccessHandler,
             final ObjectProvider<RequestMappingHandlerMapping> handlerMapping) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
@@ -65,6 +68,12 @@ public class SecurityConfig {
                         // Return to the originally requested page, or the dashboard.
                         .defaultSuccessUrl(HOME)
                         .failureHandler(loginFailureHandler()))
+                // "Sign in with Google": the provider authenticates, then the success handler
+                // links it to a local user (see OAuthLoginSuccessHandler).
+                .oauth2Login(oauth -> oauth
+                        .loginPage(LOGIN)
+                        .successHandler(oauthSuccessHandler)
+                        .failureUrl(LOGIN + "?oauth"))
                 // With CSRF enabled the logout filter only matches POST /logout, so the
                 // redirect target GET /logout reaches the controller.
                 .logout(logout -> logout
