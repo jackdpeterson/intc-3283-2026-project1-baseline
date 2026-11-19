@@ -125,7 +125,10 @@ h2 { font-size: 1.125rem; margin: 0 0 1rem; }
 main { flex: 1; }
 .container { max-width: 64rem; margin: 0 auto; padding: 2.5rem 1rem; }
 .container.narrow { max-width: 40rem; }
-.container.auth { max-width: 28rem; }
+.container.auth {
+    width: 35rem;
+    max-width: 40rem;
+}
 .hero { text-align: center; padding: 3rem 0; }
 .hero h1 { font-size: 2rem; }
 .actions { display: flex; justify-content: center; gap: 0.75rem; margin-top: 1.5rem; flex-wrap: wrap; }
